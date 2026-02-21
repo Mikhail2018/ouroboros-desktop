@@ -380,14 +380,24 @@ def _wait_for_server(port: int, timeout: float = 30.0) -> bool:
     return False
 
 
+_webview_window = None  # set by main(), used by lifecycle loop
+
+
 def agent_lifecycle_loop(port: int = AGENT_SERVER_PORT) -> None:
     """Main loop: start agent, monitor, restart on exit code 42 or crash."""
     crash_times: list = []
+    current_port = port
 
     while not _shutdown_event.is_set():
         proc = start_agent(port)
 
-        if not _wait_for_server(port, timeout=60):
+        # Read the actual port the server chose (may differ from requested)
+        time.sleep(1)
+        actual = _read_port_file()
+        if actual != current_port:
+            current_port = actual
+
+        if not _wait_for_server(current_port, timeout=60):
             log.warning("Agent server did not become responsive within 60s")
 
         proc.wait()
@@ -402,6 +412,7 @@ def agent_lifecycle_loop(port: int = AGENT_SERVER_PORT) -> None:
 
         if exit_code == RESTART_EXIT_CODE:
             log.info("Agent requested restart (exit code 42). Restarting...")
+            _sync_core_files()
             _install_deps()
             continue
 
@@ -597,6 +608,7 @@ def main():
     if not _run_first_run_wizard():
         log.info("Wizard was closed without saving. Launching anyway (Settings page available).")
 
+    global _webview_window
     port = AGENT_SERVER_PORT
 
     # Start agent lifecycle in background
@@ -630,6 +642,7 @@ def main():
         release_pid_lock()
 
     window.events.closing += _on_closing
+    _webview_window = window
 
     webview.start(debug=(not getattr(sys, "frozen", False)))
 

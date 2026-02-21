@@ -4,23 +4,28 @@ import pathlib
 _version = pathlib.Path('VERSION').read_text(encoding='utf-8').strip()
 
 a = Analysis(
-    ['app.py'],
+    ['launcher.py'],
     pathex=[],
     binaries=[],
     datas=[
         ('ouroboros', 'ouroboros'),
         ('supervisor', 'supervisor'),
-        ('ui', 'ui'),
         ('prompts', 'prompts'),
         ('assets', 'assets'),
+        ('web', 'web'),
+        ('server.py', '.'),
         ('BIBLE.md', '.'),
         ('VERSION', '.'),
         ('README.md', '.'),
         ('pyproject.toml', '.'),
         ('requirements.txt', '.'),
+        ('requirements-launcher.txt', '.'),
+        ('python-standalone', 'python-standalone'),
     ],
     hiddenimports=[
-        # Tool modules (auto-discovered via pkgutil at runtime)
+        # Launcher UI
+        'webview',
+        # Tool modules (bundled for agent subprocess bootstrap)
         'ouroboros.tools.browser',
         'ouroboros.tools.compact_context',
         'ouroboros.tools.control',
@@ -54,12 +59,6 @@ a = Analysis(
         'supervisor.state',
         'supervisor.telegram',
         'supervisor.workers',
-        # UI modules
-        'ui.components',
-        'ui.log_format',
-        'ui.notifications',
-        'ui.first_run',
-        'ui.version_panel',
         # Third-party that PyInstaller may miss
         'dulwich',
         'dulwich.repo',
@@ -74,6 +73,7 @@ a = Analysis(
         'playwright_stealth',
         'colab_launcher',
         'colab_bootstrap_shim',
+        'flet',
         'tkinter',
         'matplotlib',
         'numpy',

@@ -634,9 +634,17 @@ PORT_FILE = DATA_DIR / "state" / "server_port"
 
 
 def _find_free_port(start: int = 8765, max_tries: int = 10) -> int:
-    """Try binding to ports starting from *start*. Return the first free one."""
+    """Try binding to *start* with SO_REUSEADDR (survives TIME_WAIT after restart).
+    Falls back to scanning subsequent ports if the default is truly occupied."""
     import socket
-    for offset in range(max_tries):
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        try:
+            s.bind(("127.0.0.1", start))
+            return start
+        except OSError:
+            pass
+    for offset in range(1, max_tries):
         port = start + offset
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
