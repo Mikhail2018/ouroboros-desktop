@@ -421,12 +421,18 @@ def _check_budget_limits(
         return None
 
     task_cost = accumulated_usage.get("cost", 0)
+    
+    # Absolute budget exhaustion
+    if budget_remaining_usd <= 0:
+        finish_reason = f"🚫 Task rejected. Total budget exhausted. Please increase TOTAL_BUDGET in settings."
+        return finish_reason, accumulated_usage, llm_trace
+
     budget_pct = task_cost / budget_remaining_usd if budget_remaining_usd > 0 else 1.0
 
     if budget_pct > 0.5:
         # Hard stop — protect the budget
         finish_reason = f"Task spent ${task_cost:.3f} (>50% of remaining ${budget_remaining_usd:.2f}). Budget exhausted."
-        messages.append({"role": "system", "content": f"[BUDGET LIMIT] {finish_reason} Give your final response now."})
+        messages.append({"role": "user", "content": f"[BUDGET LIMIT] {finish_reason} Give your final response now."})
         try:
             final_msg, final_cost = _call_llm_with_retry(
                 llm, messages, active_model, None, active_effort,
@@ -440,7 +446,7 @@ def _check_budget_limits(
             return finish_reason, accumulated_usage, llm_trace
     elif budget_pct > 0.3 and round_idx % 10 == 0:
         # Soft nudge every 10 rounds when spending is significant
-        messages.append({"role": "system", "content": f"[INFO] Task spent ${task_cost:.3f} of ${budget_remaining_usd:.2f}. Wrap up if possible."})
+        messages.append({"role": "user", "content": f"[INFO] Task spent ${task_cost:.3f} of ${budget_remaining_usd:.2f}. Wrap up if possible."})
 
     return None
 

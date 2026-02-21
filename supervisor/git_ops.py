@@ -27,8 +27,8 @@ log = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # Module-level config (set via init())
 # ---------------------------------------------------------------------------
-REPO_DIR: pathlib.Path = pathlib.Path("/content/ouroboros_repo")
-DRIVE_ROOT: pathlib.Path = pathlib.Path("/content/drive/MyDrive/Ouroboros")
+REPO_DIR: pathlib.Path = pathlib.Path.home() / "Documents" / "Ouroboros" / "repo"
+DRIVE_ROOT: pathlib.Path = pathlib.Path.home() / "Documents" / "Ouroboros" / "data"
 REMOTE_URL: str = ""
 BRANCH_DEV: str = "ouroboros"
 BRANCH_STABLE: str = "ouroboros-stable"
@@ -56,14 +56,29 @@ def git_capture(cmd: List[str]) -> Tuple[int, str, str]:
 def ensure_repo_present() -> None:
     if not (REPO_DIR / ".git").exists():
         subprocess.run(["rm", "-rf", str(REPO_DIR)], check=False)
-        subprocess.run(["git", "clone", REMOTE_URL, str(REPO_DIR)], check=True)
+        REPO_DIR.mkdir(parents=True, exist_ok=True)
+        # Instead of cloning from a remote, initialize a local repo
+        # Note: The actual codebase copy is handled by the bootstrap logic in app.py before this is called
+        import dulwich.repo
+        dulwich.repo.Repo.init(str(REPO_DIR))
+        
+        # Configure local git
+        subprocess.run(["git", "config", "user.name", "Ouroboros"], cwd=str(REPO_DIR), check=True)
+        subprocess.run(["git", "config", "user.email", "ouroboros@local.mac"], cwd=str(REPO_DIR), check=True)
+        
+        # Initial commit if there are files
+        rc, _, _ = git_capture(["git", "status", "--porcelain"])
+        if rc == 0:
+            subprocess.run(["git", "add", "-A"], cwd=str(REPO_DIR), check=True)
+            subprocess.run(["git", "commit", "-m", "Initial commit from bundle"], cwd=str(REPO_DIR), check=False)
+            
+        # Create branches
+        subprocess.run(["git", "branch", "-M", BRANCH_DEV], cwd=str(REPO_DIR), check=False)
+        subprocess.run(["git", "branch", BRANCH_STABLE], cwd=str(REPO_DIR), check=False)
+        
     else:
-        subprocess.run(["git", "remote", "set-url", "origin", REMOTE_URL],
-                        cwd=str(REPO_DIR), check=True)
-    subprocess.run(["git", "config", "user.name", "Ouroboros"], cwd=str(REPO_DIR), check=True)
-    subprocess.run(["git", "config", "user.email", "ouroboros@users.noreply.github.com"],
-                    cwd=str(REPO_DIR), check=True)
-    subprocess.run(["git", "fetch", "origin"], cwd=str(REPO_DIR), check=True)
+        # We are completely local now, no remote to update
+        pass
 
 
 # ---------------------------------------------------------------------------
@@ -91,22 +106,23 @@ def _collect_repo_sync_state() -> Dict[str, Any]:
         state["warnings"].append(f"status_error:{err}")
 
     upstream = ""
-    rc, up, err = git_capture(["git", "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"])
-    if rc == 0 and up:
-        upstream = up
-    else:
-        current_branch = str(state.get("current_branch") or "")
-        if current_branch not in ("", "HEAD", "unknown"):
-            upstream = f"origin/{current_branch}"
-        elif err:
-            state["warnings"].append(f"upstream_error:{err}")
+    if _has_remote():
+        rc, up, err = git_capture(["git", "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"])
+        if rc == 0 and up:
+            upstream = up
+        else:
+            current_branch = str(state.get("current_branch") or "")
+            if current_branch not in ("", "HEAD", "unknown"):
+                upstream = f"origin/{current_branch}"
+            elif err:
+                state["warnings"].append(f"upstream_error:{err}")
 
-    if upstream:
-        rc, unpushed, err = git_capture(["git", "log", "--oneline", f"{upstream}..HEAD"])
-        if rc == 0 and unpushed:
-            state["unpushed_lines"] = [ln for ln in unpushed.splitlines() if ln.strip()]
-        elif rc != 0 and err:
-            state["warnings"].append(f"unpushed_error:{err}")
+        if upstream:
+            rc, unpushed, err = git_capture(["git", "log", "--oneline", f"{upstream}..HEAD"])
+            if rc == 0 and unpushed:
+                state["unpushed_lines"] = [ln for ln in unpushed.splitlines() if ln.strip()]
+            elif rc != 0 and err:
+                state["warnings"].append(f"unpushed_error:{err}")
 
     return state
 
@@ -205,20 +221,27 @@ def _create_rescue_snapshot(branch: str, reason: str,
 # Checkout + reset
 # ---------------------------------------------------------------------------
 
+def _has_remote() -> bool:
+    """Check if the repo has a remote configured (it shouldn't in local mode)."""
+    rc, remotes, _ = git_capture(["git", "remote"])
+    return rc == 0 and bool(remotes.strip())
+
+
 def checkout_and_reset(branch: str, reason: str = "unspecified",
                        unsynced_policy: str = "ignore") -> Tuple[bool, str]:
-    rc, _, err = git_capture(["git", "fetch", "origin"])
-    if rc != 0:
-        msg = f"git fetch failed: {err or 'unknown error'}"
-        append_jsonl(
-            DRIVE_ROOT / "logs" / "supervisor.jsonl",
-            {
-                "ts": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-                "type": "reset_fetch_failed",
-                "target_branch": branch, "reason": reason, "error": msg,
-            },
-        )
-        return False, msg
+    if _has_remote():
+        rc, _, err = git_capture(["git", "fetch", "origin"])
+        if rc != 0:
+            msg = f"git fetch failed: {err or 'unknown error'}"
+            append_jsonl(
+                DRIVE_ROOT / "logs" / "supervisor.jsonl",
+                {
+                    "ts": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                    "type": "reset_fetch_failed",
+                    "target_branch": branch, "reason": reason, "error": msg,
+                },
+            )
+            return False, msg
 
     policy = str(unsynced_policy or "ignore").strip().lower()
     if policy not in {"ignore", "block", "rescue_and_block", "rescue_and_reset"}:
@@ -284,24 +307,50 @@ def checkout_and_reset(branch: str, reason: str = "unspecified",
                 },
             )
 
-    rc_verify = subprocess.run(
-        ["git", "rev-parse", "--verify", f"origin/{branch}"],
-        cwd=str(REPO_DIR), capture_output=True,
-    ).returncode
-    if rc_verify != 0:
-        msg = f"Branch {branch} not found on remote"
-        append_jsonl(
-            DRIVE_ROOT / "logs" / "supervisor.jsonl",
-            {
-                "ts": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-                "type": "reset_branch_missing",
-                "target_branch": branch, "reason": reason,
-            },
-        )
-        return False, msg
+    if _has_remote():
+        rc_verify = subprocess.run(
+            ["git", "rev-parse", "--verify", f"origin/{branch}"],
+            cwd=str(REPO_DIR), capture_output=True,
+        ).returncode
+        if rc_verify != 0:
+            msg = f"Branch {branch} not found on remote"
+            append_jsonl(
+                DRIVE_ROOT / "logs" / "supervisor.jsonl",
+                {
+                    "ts": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                    "type": "reset_branch_missing",
+                    "target_branch": branch, "reason": reason,
+                },
+            )
+            return False, msg
+        subprocess.run(["git", "checkout", branch], cwd=str(REPO_DIR), check=True)
+        subprocess.run(["git", "reset", "--hard", f"origin/{branch}"], cwd=str(REPO_DIR), check=True)
+    else:
+        # Local-only: ensure branch exists, checkout without remote reset
+        rc_local = subprocess.run(
+            ["git", "rev-parse", "--verify", branch],
+            cwd=str(REPO_DIR), capture_output=True,
+        ).returncode
+        
+        # Helper for resilient git commands against lock contention
+        def _run_git_resilient(cmd, **kwargs):
+            import time
+            for attempt in range(5):
+                try:
+                    return subprocess.run(cmd, **kwargs)
+                except subprocess.CalledProcessError as e:
+                    if attempt == 4:
+                        raise e
+                    time.sleep(1)
+            return subprocess.run(cmd, **kwargs)
 
-    subprocess.run(["git", "checkout", branch], cwd=str(REPO_DIR), check=True)
-    subprocess.run(["git", "reset", "--hard", f"origin/{branch}"], cwd=str(REPO_DIR), check=True)
+        if rc_local != 0:
+            # Create the branch from current HEAD
+            _run_git_resilient(["git", "reset", "--hard", "HEAD"], cwd=str(REPO_DIR), check=True)
+            _run_git_resilient(["git", "clean", "-fd"], cwd=str(REPO_DIR), check=True)
+            _run_git_resilient(["git", "checkout", "-b", branch], cwd=str(REPO_DIR), check=False)
+        else:
+            _run_git_resilient(["git", "checkout", branch], cwd=str(REPO_DIR), check=True)
     # Clean __pycache__ to prevent stale bytecode (git checkout may not update mtime)
     for p in REPO_DIR.rglob("__pycache__"):
         shutil.rmtree(p, ignore_errors=True)

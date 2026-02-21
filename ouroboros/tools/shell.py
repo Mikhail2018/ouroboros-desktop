@@ -139,7 +139,7 @@ def _check_uncommitted_changes(repo_dir: pathlib.Path) -> str:
                 return (
                     f"\n\n⚠️ UNCOMMITTED CHANGES detected after Claude Code edit:\n"
                     f"{diff_res.stdout.strip()}\n"
-                    f"Remember to run git_status and repo_commit_push!"
+                    f"Remember to run git_status and repo_commit!"
                 )
     except Exception as e:
         log.debug("Failed to check git status after claude_code_edit: %s", e, exc_info=True)
@@ -251,7 +251,7 @@ def get_tools() -> List[ToolEntry]:
         }, _run_shell, is_code_tool=True),
         ToolEntry("claude_code_edit", {
             "name": "claude_code_edit",
-            "description": "Delegate code edits to Claude Code CLI. Preferred for multi-file changes and refactors. Follow with repo_commit_push.",
+            "description": "Delegate code edits to Claude Code CLI. Preferred for multi-file changes and refactors. Follow with repo_commit.",
             "parameters": {"type": "object", "properties": {
                 "prompt": {"type": "string"},
                 "cwd": {"type": "string", "default": ""},

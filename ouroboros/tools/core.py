@@ -328,7 +328,7 @@ def get_tools() -> List[ToolEntry]:
     return [
         ToolEntry("repo_read", {
             "name": "repo_read",
-            "description": "Read a UTF-8 text file from the GitHub repo (relative path).",
+            "description": "Read a UTF-8 text file from the local repo (relative path).",
             "parameters": {"type": "object", "properties": {"path": {"type": "string"}}, "required": ["path"]},
         }, _repo_read),
         ToolEntry("repo_list", {
@@ -341,12 +341,12 @@ def get_tools() -> List[ToolEntry]:
         }, _repo_list),
         ToolEntry("drive_read", {
             "name": "drive_read",
-            "description": "Read a UTF-8 text file from Google Drive (relative to MyDrive/Ouroboros/).",
+            "description": "Read a UTF-8 text file from the local data directory.",
             "parameters": {"type": "object", "properties": {"path": {"type": "string"}}, "required": ["path"]},
         }, _drive_read),
         ToolEntry("drive_list", {
             "name": "drive_list",
-            "description": "List files under a Drive directory.",
+            "description": "List files under a local data directory.",
             "parameters": {"type": "object", "properties": {
                 "dir": {"type": "string", "default": "."},
                 "max_entries": {"type": "integer", "default": 500},
@@ -354,7 +354,7 @@ def get_tools() -> List[ToolEntry]:
         }, _drive_list),
         ToolEntry("drive_write", {
             "name": "drive_write",
-            "description": "Write a UTF-8 text file on Google Drive.",
+            "description": "Write a UTF-8 text file to the local data directory.",
             "parameters": {"type": "object", "properties": {
                 "path": {"type": "string"},
                 "content": {"type": "string"},
@@ -364,7 +364,7 @@ def get_tools() -> List[ToolEntry]:
         ToolEntry("send_photo", {
             "name": "send_photo",
             "description": (
-                "Send a base64-encoded image (PNG) to the owner's Telegram chat. "
+                "Send a base64-encoded image (PNG) to the owner's chat. "
                 "Use after browse_page(output='screenshot') or browser_action(action='screenshot'). "
                 "Pass the base64 string from the screenshot result as image_base64."
             ),

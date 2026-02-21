@@ -1,7 +1,7 @@
-"""Knowledge base tools: persistent structured memory on Google Drive.
+"""Knowledge base tools: persistent structured memory on local disk.
 
 Provides read/write/list operations for topic-based knowledge files
-stored in memory/knowledge/ on Drive. Auto-maintains an index file.
+stored in memory/knowledge/ on the local data directory. Auto-maintains an index file.
 """
 
 import logging

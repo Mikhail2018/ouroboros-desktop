@@ -1,4 +1,4 @@
-"""Git tools: repo_write_commit, repo_commit_push, git_status, git_diff."""
+"""Git tools: repo_write_commit, repo_commit, git_status, git_diff."""
 
 from __future__ import annotations
 
@@ -97,25 +97,13 @@ def _run_pre_push_tests(ctx: ToolContext) -> Optional[str]:
         return f"⚠️ PRE_PUSH_TEST_ERROR: Unexpected error running tests: {e}"
 
 
-def _git_push_with_tests(ctx: ToolContext) -> Optional[str]:
-    """Run pre-push tests, then pull --rebase and push. Returns None on success, error string on failure."""
-    test_error = _run_pre_push_tests(ctx)
+def _git_commit_with_tests(ctx: ToolContext) -> Optional[str]:
+    """Run pre-commit tests. Returns None on success, error string on failure."""
+    test_error = _run_pre_push_tests(ctx)  # repurpose existing test runner
     if test_error:
-        log.error("Pre-push tests failed, blocking push")
+        log.error("Tests failed, blocking commit")
         ctx.last_push_succeeded = False
-        return f"⚠️ PRE_PUSH_TESTS_FAILED: Tests failed, push blocked.\n{test_error}\nCommitted locally but NOT pushed. Fix tests and push manually."
-
-    try:
-        run_cmd(["git", "pull", "--rebase", "origin", ctx.branch_dev], cwd=ctx.repo_dir)
-    except Exception:
-        log.debug(f"Failed to pull --rebase before push", exc_info=True)
-        pass
-
-    try:
-        run_cmd(["git", "push", "origin", ctx.branch_dev], cwd=ctx.repo_dir)
-    except Exception as e:
-        return f"⚠️ GIT_ERROR (push): {e}\nCommitted locally but NOT pushed."
-
+        return f"⚠️ TESTS_FAILED: Tests failed, commit blocked.\n{test_error}\nFix tests and commit manually."
     return None
 
 
@@ -144,13 +132,15 @@ def _repo_write_commit(ctx: ToolContext, path: str, content: str, commit_message
         except Exception as e:
             return f"⚠️ GIT_ERROR (commit): {e}"
 
-        push_error = _git_push_with_tests(ctx)
+        push_error = _git_commit_with_tests(ctx)
         if push_error:
+            # Revert the commit if tests failed to avoid committing bad code
+            run_cmd(["git", "reset", "--soft", "HEAD~1"], cwd=ctx.repo_dir)
             return push_error
     finally:
         _release_git_lock(lock)
     ctx.last_push_succeeded = True
-    return f"OK: committed and pushed to {ctx.branch_dev}: {commit_message}"
+    return f"OK: committed to {ctx.branch_dev}: {commit_message}"
 
 
 def _repo_commit_push(ctx: ToolContext, commit_message: str, paths: Optional[List[str]] = None) -> str:
@@ -186,21 +176,23 @@ def _repo_commit_push(ctx: ToolContext, commit_message: str, paths: Optional[Lis
         except Exception as e:
             return f"⚠️ GIT_ERROR (commit): {e}"
 
-        push_error = _git_push_with_tests(ctx)
+        push_error = _git_commit_with_tests(ctx)
         if push_error:
+            # Revert the commit if tests failed to avoid committing bad code
+            run_cmd(["git", "reset", "--soft", "HEAD~1"], cwd=ctx.repo_dir)
             return push_error
     finally:
         _release_git_lock(lock)
     ctx.last_push_succeeded = True
-    result = f"OK: committed and pushed to {ctx.branch_dev}: {commit_message}"
+    result = f"OK: committed to {ctx.branch_dev}: {commit_message}"
     if paths is not None:
         try:
             untracked = run_cmd(["git", "ls-files", "--others", "--exclude-standard"], cwd=ctx.repo_dir)
             if untracked.strip():
                 files = ", ".join(untracked.strip().split("\n"))
-                result += f"\n⚠️ WARNING: untracked files remain: {files} — they are NOT in git. Use repo_commit_push without paths to add everything."
+                result += f"\n⚠️ WARNING: untracked files remain: {files} — they are NOT in git. Use repo_commit without paths to add everything."
         except Exception:
-            log.debug("Failed to check for untracked files after repo_commit_push", exc_info=True)
+            log.debug("Failed to check for untracked files after repo_commit", exc_info=True)
             pass
     return result
 
@@ -226,16 +218,16 @@ def get_tools() -> List[ToolEntry]:
     return [
         ToolEntry("repo_write_commit", {
             "name": "repo_write_commit",
-            "description": "Write one file + commit + push to ouroboros branch. For small deterministic edits.",
+            "description": "Write one file + commit to ouroboros branch. For small deterministic edits.",
             "parameters": {"type": "object", "properties": {
                 "path": {"type": "string"},
                 "content": {"type": "string"},
                 "commit_message": {"type": "string"},
             }, "required": ["path", "content", "commit_message"]},
         }, _repo_write_commit, is_code_tool=True),
-        ToolEntry("repo_commit_push", {
-            "name": "repo_commit_push",
-            "description": "Commit + push already-changed files. Does pull --rebase before push.",
+        ToolEntry("repo_commit", {
+            "name": "repo_commit",
+            "description": "Commit already-changed files.",
             "parameters": {"type": "object", "properties": {
                 "commit_message": {"type": "string"},
                 "paths": {"type": "array", "items": {"type": "string"}, "description": "Files to add (empty = git add -A)"},

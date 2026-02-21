@@ -29,8 +29,8 @@ from supervisor.telegram import send_with_budget
 # ---------------------------------------------------------------------------
 # Module-level config (set via init())
 # ---------------------------------------------------------------------------
-REPO_DIR: pathlib.Path = pathlib.Path("/content/ouroboros_repo")
-DRIVE_ROOT: pathlib.Path = pathlib.Path("/content/drive/MyDrive/Ouroboros")
+REPO_DIR: pathlib.Path = pathlib.Path.home() / "Documents" / "Ouroboros" / "repo"
+DRIVE_ROOT: pathlib.Path = pathlib.Path.home() / "Documents" / "Ouroboros" / "data"
 MAX_WORKERS: int = 5
 SOFT_TIMEOUT_SEC: int = 600
 HARD_TIMEOUT_SEC: int = 1800
@@ -42,10 +42,10 @@ BRANCH_STABLE: str = "ouroboros-stable"
 
 _CTX = None
 _LAST_SPAWN_TIME: float = 0.0  # grace period: don't count dead workers right after spawn
-_SPAWN_GRACE_SEC: float = 90.0  # workers need up to ~60s to init on Colab (spawn + pip + Drive FUSE)
+_SPAWN_GRACE_SEC: float = 90.0  # workers need up to ~60s to init (spawn + pip)
 
-# On Linux/Colab, "spawn" re-imports __main__ (colab_launcher.py) in child processes.
-# Since launcher has top-level side effects, this causes worker child crashes (exitcode=1).
+# On Linux, "spawn" re-imports __main__ in child processes.
+# Since the launcher has top-level side effects, this causes worker child crashes (exitcode=1).
 # Use "fork" by default on Linux; allow override via env.
 _DEFAULT_WORKER_START_METHOD = "fork" if sys.platform.startswith("linux") else "spawn"
 _WORKER_START_METHOD = str(os.environ.get("OUROBOROS_WORKER_START_METHOD", _DEFAULT_WORKER_START_METHOD) or _DEFAULT_WORKER_START_METHOD).strip().lower()
@@ -140,6 +140,15 @@ def _get_chat_agent():
 
 
 def handle_chat_direct(chat_id: int, text: str, image_data: Optional[Union[Tuple[str, str], Tuple[str, str, str]]] = None) -> None:
+    from supervisor.state import budget_remaining, load_state
+    if budget_remaining(load_state()) <= 0:
+        try:
+            from supervisor.telegram import get_tg
+            get_tg().send_message(chat_id, "🚫 Budget exhausted. Task rejected. Please increase TOTAL_BUDGET in settings.")
+        except Exception:
+            pass
+        return
+        
     try:
         agent = _get_chat_agent()
         task = {
@@ -479,12 +488,18 @@ def assign_tasks() -> None:
     from supervisor import queue
     from supervisor.state import budget_remaining, EVOLUTION_BUDGET_RESERVE
     with _queue_lock:
+        st = load_state()
+        remaining = budget_remaining(st)
+        
+        if remaining <= 0:
+            return  # Stop assigning ALL tasks if budget is completely exhausted
+            
         for w in WORKERS.values():
             if w.busy_task_id is None and PENDING:
                 # Find first suitable task (skip over-budget evolution tasks)
                 chosen_idx = None
                 for i, candidate in enumerate(PENDING):
-                    if str(candidate.get("type") or "") == "evolution" and budget_remaining(load_state()) < EVOLUTION_BUDGET_RESERVE:
+                    if str(candidate.get("type") or "") == "evolution" and remaining < EVOLUTION_BUDGET_RESERVE:
                         continue
                     chosen_idx = i
                     break

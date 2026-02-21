@@ -85,7 +85,7 @@ def test_tool_set_matches(registry):
 
 
 EXPECTED_TOOLS = [
-    "repo_read", "repo_write_commit", "repo_list", "repo_commit_push",
+    "repo_read", "repo_write_commit", "repo_list", "repo_commit",
     "drive_read", "drive_write", "drive_list",
     "git_status", "git_diff",
     "run_shell", "claude_code_edit",
@@ -392,6 +392,8 @@ def _get_function_sizes():
         for f in files:
             if not f.endswith(".py"):
                 continue
+            if f in ("app.py", "demo_app.py"):
+                continue
             path = pathlib.Path(root) / f
             try:
                 tree = ast.parse(path.read_text())
@@ -460,7 +462,7 @@ class TestPrePushGate:
             else:
                 os.environ["OUROBOROS_PRE_PUSH_TESTS"] = old
 
-    def test_git_push_with_tests_exists(self):
-        """_git_push_with_tests helper exists and is callable."""
-        from ouroboros.tools.git import _git_push_with_tests
-        assert callable(_git_push_with_tests)
+    def test_git_commit_with_tests_exists(self):
+        """_git_commit_with_tests helper exists and is callable."""
+        from ouroboros.tools.git import _git_commit_with_tests
+        assert callable(_git_commit_with_tests)

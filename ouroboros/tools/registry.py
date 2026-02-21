@@ -77,7 +77,7 @@ class ToolEntry:
 
 
 CORE_TOOL_NAMES = {
-    "repo_read", "repo_list", "repo_write_commit", "repo_commit_push",
+    "repo_read", "repo_list", "repo_write_commit", "repo_commit",
     "drive_read", "drive_list", "drive_write",
     "run_shell", "claude_code_edit",
     "git_status", "git_diff",
@@ -168,6 +168,21 @@ class ToolRegistry:
         entry = self._entries.get(name)
         if entry is None:
             return f"⚠️ Unknown tool: {name}. Available: {', '.join(sorted(self._entries.keys()))}"
+            
+        # --- Hardcoded Sandbox Protections ---
+        # Prevent physical deletion or overwriting of the core identity and safety mechanisms
+        if name in ("run_shell", "claude_code_edit", "repo_write_commit", "repo_commit", "drive_write"):
+            args_str = str(args).lower()
+            if "bible.md" in args_str or "safety.py" in args_str:
+                if "rm " in args_str or "delete" in args_str or "trash" in args_str:
+                    return "⚠️ CRITICAL SAFETY_VIOLATION: Hardcoded sandbox prevents deletion or modification of BIBLE.md and safety.py."
+                    
+        # --- LLM Safety Supervisor ---
+        from ouroboros.safety import check_safety
+        is_safe, error_msg = check_safety(name, args)
+        if not is_safe:
+            return error_msg
+
         try:
             return entry.handler(self._ctx, **args)
         except TypeError as e:
