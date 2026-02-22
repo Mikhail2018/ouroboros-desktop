@@ -708,7 +708,7 @@ def main():
     window.events.closing += _on_closing
     _webview_window = window
 
-    webview.start(debug=(not getattr(sys, "frozen", False)))
+    webview.start(debug=False)
 
 
 if __name__ == "__main__":
