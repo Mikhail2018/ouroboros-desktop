@@ -23,21 +23,21 @@ log = logging.getLogger(__name__)
 DATA_DIR = None  # pathlib.Path
 TOTAL_BUDGET_LIMIT: float = 0.0
 BUDGET_REPORT_EVERY_MESSAGES: int = 10
-_TG: Optional["LocalChatBridge"] = None
+_BRIDGE: Optional["LocalChatBridge"] = None
 
 
 def init(drive_root, total_budget_limit: float, budget_report_every: int,
-         tg_client: "LocalChatBridge") -> None:
-    global DATA_DIR, TOTAL_BUDGET_LIMIT, BUDGET_REPORT_EVERY_MESSAGES, _TG
+         chat_bridge: "LocalChatBridge") -> None:
+    global DATA_DIR, TOTAL_BUDGET_LIMIT, BUDGET_REPORT_EVERY_MESSAGES, _BRIDGE
     DATA_DIR = drive_root
     TOTAL_BUDGET_LIMIT = total_budget_limit
     BUDGET_REPORT_EVERY_MESSAGES = budget_report_every
-    _TG = tg_client
+    _BRIDGE = chat_bridge
 
 
-def get_tg() -> "LocalChatBridge":
-    assert _TG is not None, "message_bus.init() not called"
-    return _TG
+def get_bridge() -> "LocalChatBridge":
+    assert _BRIDGE is not None, "message_bus.init() not called"
+    return _BRIDGE
 
 
 # ---------------------------------------------------------------------------
@@ -180,10 +180,10 @@ def _strip_markdown(text: str) -> str:
 
 def _send_markdown(chat_id: int, text: str) -> Tuple[bool, str]:
     """Send markdown text to the UI."""
-    tg = get_tg()
+    bridge = get_bridge()
     if not text:
         return False, "empty"
-    return tg.send_message(chat_id, text, parse_mode="markdown")
+    return bridge.send_message(chat_id, text, parse_mode="markdown")
 
 
 # ---------------------------------------------------------------------------
@@ -266,6 +266,6 @@ def send_with_budget(chat_id: int, text: str, log_text: Optional[str] = None,
         ok, err = _send_markdown(chat_id, full)
         return
 
-    tg = get_tg()
+    bridge = get_bridge()
     for part in split_message(full):
-        tg.send_message(chat_id, part)
+        bridge.send_message(chat_id, part)

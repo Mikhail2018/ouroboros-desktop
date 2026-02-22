@@ -207,7 +207,7 @@ class Memory:
         lines = ["Event counts:"]
         for evt_type, count in top_types:
             lines.append(f"  {evt_type}: {count}")
-        error_types = {"tool_error", "task_error", "tool_rounds_exceeded"}
+        error_types = {"tool_error", "task_error", "tool_rounds_exceeded", "commit_test_failure"}
         errors = [e for e in entries if e.get("type") in error_types]
         if errors:
             lines.append("\nRecent errors:")

@@ -1,4 +1,4 @@
-# Ouroboros v2.0.0 — Architecture & Reference
+# Ouroboros v3.1.0 — Architecture & Reference
 
 This document describes every component, page, button, API endpoint, and data flow.
 It is the single source of truth for how the system works. Keep it updated.
@@ -116,10 +116,9 @@ On every launch (not just first run), these files are copied from the workspace
 bundle to `~/Ouroboros/repo/`, ensuring safety-critical code cannot be permanently
 corrupted by agent self-modification:
 
-- `prompts/SAFETY.md`, `prompts/SYSTEM.md`
-- `ouroboros/config.py`, `ouroboros/safety.py`, `ouroboros/local_model.py`, `ouroboros/tools/registry.py`, `ouroboros/loop.py`
-- `supervisor/message_bus.py`
-- `server.py`
+- `prompts/SAFETY.md`
+- `ouroboros/safety.py`
+- `ouroboros/tools/registry.py`
 
 ---
 

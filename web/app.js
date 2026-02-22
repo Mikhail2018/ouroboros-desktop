@@ -15,12 +15,18 @@ class WS {
         this.listeners = {};
         this.reconnectDelay = 1000;
         this.maxDelay = 10000;
+        this._wasConnected = false;
         this.connect();
     }
 
     connect() {
         this.ws = new WebSocket(this.url);
         this.ws.onopen = () => {
+            if (this._wasConnected) {
+                location.reload();
+                return;
+            }
+            this._wasConnected = true;
             this.reconnectDelay = 1000;
             this.emit('open');
             document.getElementById('reconnect-overlay')?.classList.remove('visible');

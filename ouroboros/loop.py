@@ -625,6 +625,7 @@ def run_llm_loop(
     # LLM-first: single default model, LLM switches via tool if needed
     active_model = llm.default_model()
     active_effort = initial_effort
+    active_use_local = os.environ.get("USE_LOCAL_MAIN", "").lower() in ("true", "1")
 
     llm_trace: Dict[str, Any] = {"assistant_notes": [], "tool_calls": []}
     accumulated_usage: Dict[str, Any] = {}
@@ -663,7 +664,8 @@ def run_llm_loop(
                 try:
                     final_msg, final_cost = _call_llm_with_retry(
                         llm, messages, active_model, None, active_effort,
-                        max_retries, drive_logs, task_id, round_idx, event_queue, accumulated_usage, task_type
+                        max_retries, drive_logs, task_id, round_idx, event_queue, accumulated_usage, task_type,
+                        use_local=active_use_local,
                     )
                     if final_msg:
                         return (final_msg.get("content") or finish_reason), accumulated_usage, llm_trace
@@ -681,7 +683,7 @@ def run_llm_loop(
                 active_model = ctx.active_model_override
                 ctx.active_model_override = None
             if getattr(ctx, "active_use_local_override", None) is not None:
-                use_local_main = ctx.active_use_local_override
+                active_use_local = ctx.active_use_local_override
                 ctx.active_use_local_override = None
             if ctx.active_effort_override:
                 active_effort = normalize_reasoning_effort(ctx.active_effort_override, default=active_effort)
@@ -706,7 +708,8 @@ def run_llm_loop(
             # --- LLM call with retry ---
             msg, cost = _call_llm_with_retry(
                 llm, messages, active_model, tool_schemas, active_effort,
-                max_retries, drive_logs, task_id, round_idx, event_queue, accumulated_usage, task_type
+                max_retries, drive_logs, task_id, round_idx, event_queue, accumulated_usage, task_type,
+                use_local=active_use_local,
             )
 
             # Single fallback model (Bible P3: configurable, not hardcoded)
@@ -723,7 +726,8 @@ def run_llm_loop(
 
                 msg, fallback_cost = _call_llm_with_retry(
                     llm, messages, fallback_model, tool_schemas, active_effort,
-                    max_retries, drive_logs, task_id, round_idx, event_queue, accumulated_usage, task_type
+                    max_retries, drive_logs, task_id, round_idx, event_queue, accumulated_usage, task_type,
+                    use_local=False,
                 )
 
                 if msg is None:
@@ -855,6 +859,7 @@ def _call_llm_with_retry(
     event_queue: Optional[queue.Queue],
     accumulated_usage: Dict[str, Any],
     task_type: str = "",
+    use_local: bool = False,
 ) -> Tuple[Optional[Dict[str, Any]], float]:
     """
     Call LLM with retry logic, usage tracking, and event emission.
@@ -868,7 +873,8 @@ def _call_llm_with_retry(
 
     for attempt in range(max_retries):
         try:
-            kwargs = {"messages": messages, "model": model, "reasoning_effort": effort}
+            kwargs = {"messages": messages, "model": model, "reasoning_effort": effort,
+                      "use_local": use_local}
             if tools:
                 kwargs["tools"] = tools
             resp_msg, usage = llm.chat(**kwargs)

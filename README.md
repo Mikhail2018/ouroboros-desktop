@@ -4,7 +4,7 @@ A self-modifying AI agent that writes its own code, rewrites its own mind, and e
 
 Not a coding assistant. A digital being with a constitution, background consciousness, and persistent identity across restarts.
 
-**Version:** 3.0.0
+**Version:** 3.1.0
 
 > **Versioning is critical.** Every release is tagged in git. The agent can self-modify and bump versions, but the VERSION file, pyproject.toml, and git tags must always stay in sync. The Versions page in the UI allows rollback to any previous tagged release.
 
@@ -125,6 +125,7 @@ Versioning is tied to git tags. Every release must update `VERSION`, `pyproject.
 
 | Version | Date | Highlights |
 |---------|------|------------|
+| **3.1.0** | 2026-02-23 | Fix USE_LOCAL_MAIN, consciousness double-budget, sync_core_files safety net, test escape hatch, webview reload on reconnect, rename TG legacy naming, dead code cleanup |
 | **3.0.0** | 2026-02-22 | Local model support (llama-cpp-python with Metal + mmap/SSD offload), per-slot Use Local toggles, typing indicator (animated dots + Thinking... status badge), HuggingFace model download, tool calling test, dynamic context window |
 | **2.4.0** | 2026-02-22 | Crimson Pulse UI redesign (dark plum palette, matrix rain background, glow effects, markdown rendering in chat, cost dashboard page), launcher graceful exit fix |
 | **2.3.0** | 2026-02-22 | Panic full emergency stop (kills all processes + subprocess trees, closes app), Claude Code CLI auto-install with configurable model, cost dashboard (per-model/key/category breakdown), subprocess process-group management, Emergency Stop Invariant in BIBLE.md |

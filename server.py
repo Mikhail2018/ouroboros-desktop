@@ -140,7 +140,7 @@ def _run_supervisor(settings: dict) -> None:
             drive_root=DATA_DIR,
             total_budget_limit=float(settings.get("TOTAL_BUDGET", 10.0)),
             budget_report_every=10,
-            tg_client=bridge,
+            chat_bridge=bridge,
         )
 
         from supervisor.state import init as state_init, init_state, load_state, save_state
@@ -220,7 +220,7 @@ def _run_supervisor(settings: dict) -> None:
         _event_ctx = types.SimpleNamespace(
             DRIVE_ROOT=DATA_DIR, REPO_DIR=REPO_DIR,
             BRANCH_DEV="ouroboros", BRANCH_STABLE="ouroboros-stable",
-            TG=bridge, WORKERS=WORKERS, PENDING=PENDING, RUNNING=RUNNING,
+            bridge=bridge, WORKERS=WORKERS, PENDING=PENDING, RUNNING=RUNNING,
             MAX_WORKERS=max_workers,
             send_with_budget=send_with_budget, load_state=load_state, save_state=save_state,
             update_budget_from_usage=update_budget_from_usage, append_jsonl=append_jsonl,
@@ -467,15 +467,15 @@ async def ws_endpoint(websocket: WebSocket) -> None:
             if msg_type == "chat":
                 text = msg.get("content", "")
                 if text:
-                    from supervisor.message_bus import get_tg
-                    tg = get_tg()
-                    tg.ui_send(text)
+                    from supervisor.message_bus import get_bridge
+                    bridge = get_bridge()
+                    bridge.ui_send(text)
             elif msg_type == "command":
                 cmd = msg.get("cmd", "")
                 if cmd:
-                    from supervisor.message_bus import get_tg
-                    tg = get_tg()
-                    tg.ui_send(cmd)
+                    from supervisor.message_bus import get_bridge
+                    bridge = get_bridge()
+                    bridge.ui_send(cmd)
     except WebSocketDisconnect:
         pass
     except Exception as e:
@@ -580,9 +580,9 @@ async def api_command(request: Request) -> JSONResponse:
         body = await request.json()
         cmd = body.get("cmd", "")
         if cmd:
-            from supervisor.message_bus import get_tg
-            tg = get_tg()
-            tg.ui_send(cmd)
+            from supervisor.message_bus import get_bridge
+            bridge = get_bridge()
+            bridge.ui_send(cmd)
         return JSONResponse({"status": "ok"})
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=400)

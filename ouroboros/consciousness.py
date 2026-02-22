@@ -207,17 +207,8 @@ class BackgroundConsciousness:
                 total_cost += cost
                 self._bg_spent_usd += cost
 
-                # Write BG spending to global state so it's visible in budget tracking
-                try:
-                    from supervisor.state import update_budget_from_usage
-                    update_budget_from_usage({
-                        "cost": cost, "rounds": 1,
-                        "prompt_tokens": usage.get("prompt_tokens", 0),
-                        "completion_tokens": usage.get("completion_tokens", 0),
-                        "cached_tokens": usage.get("cached_tokens", 0),
-                    })
-                except Exception:
-                    log.debug("Failed to update global budget from BG consciousness", exc_info=True)
+                # Global budget update happens via event queue → events.py _handle_llm_usage.
+                # Do NOT call update_budget_from_usage directly here — that would double-count.
 
                 # Budget check between rounds
                 if not self._check_budget():
@@ -376,7 +367,7 @@ class BackgroundConsciousness:
         # Knowledge base
         "knowledge_read", "knowledge_write", "knowledge_list",
         # Read-only tools for awareness
-        "web_search", "repo_read", "repo_list", "drive_read", "drive_list",
+        "web_search", "repo_read", "repo_list", "data_read", "data_list",
         "chat_history",
         # GitHub Issues
         "list_github_issues", "get_github_issue",

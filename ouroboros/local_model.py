@@ -181,8 +181,8 @@ class LocalModelManager:
             try:
                 self._proc = subprocess.Popen(
                     cmd,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.STDOUT,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
                     stdin=subprocess.DEVNULL,
                     start_new_session=True,
                 )
@@ -199,7 +199,7 @@ class LocalModelManager:
             target=self._wait_for_healthy, daemon=True, name="local-model-health"
         ).start()
 
-    def _wait_for_healthy(self, timeout: float = 120.0) -> None:
+    def _wait_for_healthy(self, timeout: float = 300.0) -> None:
         """Poll the server until it responds or times out."""
         start = time.time()
         while time.time() - start < timeout:

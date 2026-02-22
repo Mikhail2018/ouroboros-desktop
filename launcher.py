@@ -97,20 +97,9 @@ def _sync_core_files() -> None:
         bundle_dir = pathlib.Path(__file__).parent
 
     sync_paths = [
-        "prompts/SAFETY.md",
-        "prompts/SYSTEM.md",
-        "ouroboros/config.py",
         "ouroboros/safety.py",
-        "ouroboros/local_model.py",
+        "prompts/SAFETY.md",
         "ouroboros/tools/registry.py",
-        "ouroboros/loop.py",
-        "supervisor/message_bus.py",
-        "server.py",
-        "web/index.html",
-        "web/app.js",
-        "web/style.css",
-        "web/logo.jpg",
-        "web/favicon.png",
     ]
     for rel in sync_paths:
         src = bundle_dir / rel
@@ -121,11 +110,31 @@ def _sync_core_files() -> None:
     log.info("Synced %d core files to %s", len(sync_paths), REPO_DIR)
 
 
+def _commit_synced_files() -> None:
+    """Commit sync'd safety files so git reset --hard doesn't revert them."""
+    try:
+        for rel in ["ouroboros/safety.py", "prompts/SAFETY.md", "ouroboros/tools/registry.py"]:
+            subprocess.run(["git", "add", rel], cwd=str(REPO_DIR),
+                           check=False, capture_output=True)
+        status = subprocess.run(["git", "status", "--porcelain", "--",
+                                 "ouroboros/safety.py", "prompts/SAFETY.md",
+                                 "ouroboros/tools/registry.py"],
+                                cwd=str(REPO_DIR), capture_output=True, text=True)
+        if status.stdout.strip():
+            subprocess.run(["git", "commit", "-m",
+                            "safety-sync: restore protected files from bundle"],
+                           cwd=str(REPO_DIR), check=False, capture_output=True)
+            log.info("Committed synced safety files.")
+    except Exception as e:
+        log.warning("Failed to commit synced files: %s", e)
+
+
 def bootstrap_repo() -> None:
     """Copy bundled codebase to REPO_DIR on first run, sync core files always."""
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     if REPO_DIR.exists() and (REPO_DIR / "server.py").exists():
         _sync_core_files()
+        _commit_synced_files()
         return
 
     needs_full_bootstrap = not REPO_DIR.exists()
@@ -440,6 +449,7 @@ def agent_lifecycle_loop(port: int = AGENT_SERVER_PORT) -> None:
         if exit_code == RESTART_EXIT_CODE:
             log.info("Agent requested restart (exit code 42). Restarting...")
             _sync_core_files()
+            _commit_synced_files()
             _install_deps()
             _kill_stale_on_port(port)
             continue

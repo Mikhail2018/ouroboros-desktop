@@ -58,7 +58,7 @@ def _handle_typing_start(evt: Dict[str, Any], ctx: Any) -> None:
     try:
         chat_id = int(evt.get("chat_id") or 0)
         if chat_id:
-            ctx.TG.send_chat_action(chat_id, "typing")
+            ctx.bridge.send_chat_action(chat_id, "typing")
     except Exception:
         log.debug("Failed to send typing action to chat", exc_info=True)
         pass
@@ -170,30 +170,6 @@ def _handle_review_request(evt: Dict[str, Any], ctx: Any) -> None:
     ctx.queue_review_task(
         reason=str(evt.get("reason") or "agent_review_request"), force=False
     )
-
-
-def _handle_restart_request(evt: Dict[str, Any], ctx: Any) -> None:
-    st = ctx.load_state()
-    if st.get("owner_chat_id"):
-        ctx.send_with_budget(
-            int(st["owner_chat_id"]),
-            f"♻️ Restart requested by agent: {evt.get('reason')}",
-        )
-    ok, msg = ctx.safe_restart(
-        reason="agent_restart_request", unsynced_policy="rescue_and_reset"
-    )
-    if not ok:
-        if st.get("owner_chat_id"):
-            ctx.send_with_budget(int(st["owner_chat_id"]), f"⚠️ Restart skipped: {msg}")
-        return
-    ctx.kill_workers()
-    # Persist message_offset/session_id before restart to avoid duplicate messages.
-    st2 = ctx.load_state()
-    st2["session_id"] = uuid.uuid4().hex
-    st2["message_offset"] = int(st2.get("message_offset") or st.get("message_offset") or 0)
-    ctx.save_state(st2)
-    ctx.persist_queue_snapshot(reason="pre_restart_exit")
-    ctx.request_restart()
 
 
 def _handle_promote_to_stable(evt: Dict[str, Any], ctx: Any) -> None:
@@ -379,7 +355,7 @@ def _handle_send_photo(evt: Dict[str, Any], ctx: Any) -> None:
         if not chat_id or not image_b64:
             return
         photo_bytes = b64mod.b64decode(image_b64)
-        ok, err = ctx.TG.send_photo(chat_id, photo_bytes, caption=caption)
+        ok, err = ctx.bridge.send_photo(chat_id, photo_bytes, caption=caption)
         if not ok:
             ctx.append_jsonl(
                 ctx.DRIVE_ROOT / "logs" / "supervisor.jsonl",
@@ -424,7 +400,6 @@ EVENT_HANDLERS = {
     "task_done": _handle_task_done,
     "task_metrics": _handle_task_metrics,
     "review_request": _handle_review_request,
-    "restart_request": _handle_restart_request,
     "promote_to_stable": _handle_promote_to_stable,
     "schedule_task": _handle_schedule_task,
     "cancel_task": _handle_cancel_task,
