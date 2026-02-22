@@ -636,7 +636,24 @@ def main():
         log.info("Window closing — graceful shutdown.")
         _shutdown_event.set()
         stop_agent()
+        _kill_orphaned_children()
         release_pid_lock()
+
+    def _kill_orphaned_children():
+        """Final safety net: kill any processes still on the server port.
+
+        After stop_agent() sends SIGTERM/SIGKILL to server.py, worker
+        grandchildren may survive as orphans (fork on macOS).  Sweeping
+        the port guarantees nothing lingers.
+        """
+        _kill_stale_on_port(port)
+        import signal
+        for child in __import__('multiprocessing').active_children():
+            try:
+                os.kill(child.pid, signal.SIGKILL)
+                log.info("Killed orphaned child pid=%d", child.pid)
+            except (ProcessLookupError, PermissionError, OSError):
+                pass
 
     window.events.closing += _on_closing
     _webview_window = window

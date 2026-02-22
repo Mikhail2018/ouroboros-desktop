@@ -50,6 +50,7 @@ server.py (Starlette+uvicorn) ← HTTP + WebSocket on localhost:8765
    - Shows PyWebView window pointed at `http://127.0.0.1:8765`
    - Monitors subprocess; restarts on exit code 42 (restart signal)
    - First-run wizard (PyWebView HTML page for API key entry)
+   - **Graceful shutdown with orphan cleanup** (see Shutdown section below)
 
 2. **server.py** — self-editable inner server. Can be modified by the agent.
    - Starlette app with HTTP API + WebSocket
@@ -325,7 +326,33 @@ Uncommitted changes are rescued to `~/Ouroboros/data/archive/rescue/` before res
 
 ---
 
-## 9. Key Invariants
+## 9. Shutdown & Process Cleanup
+
+**Requirement: closing the window (X button or Cmd+Q) MUST leave zero orphan
+processes. No zombies, no workers lingering in background.**
+
+Shutdown sequence (`launcher.py:_on_closing`):
+
+```
+1. _shutdown_event.set()           ← signal lifecycle loop to exit
+2. stop_agent()
+   a. SIGTERM → server.py          ← server runs its lifespan shutdown:
+      │                                kill_workers(force=True) → SIGTERM+SIGKILL all workers
+      │                                then server exits cleanly
+   b. wait 10s for exit
+   c. if still alive → SIGKILL     ← hard kill (workers may orphan)
+3. _kill_orphaned_children()        ← SAFETY NET
+   a. _kill_stale_on_port(8765)    ← lsof port, SIGKILL any survivors
+   b. multiprocessing.active_children() → SIGKILL each
+4. release_pid_lock()               ← delete ~/Ouroboros/ouroboros.pid
+```
+
+This three-layer approach (graceful → force-kill server → sweep port/children)
+guarantees no orphans even if the server hangs or workers resist SIGTERM.
+
+---
+
+## 10. Key Invariants
 
 1. **Never delete BIBLE.md or identity.md** (hardcoded + LLM safety)
 2. **VERSION == pyproject.toml version == latest git tag == README version**
@@ -334,3 +361,4 @@ Uncommitted changes are rescued to `~/Ouroboros/data/archive/rescue/` before res
 5. **State locking**: `state.json` uses file locks for concurrent read-modify-write
 6. **Budget tracking**: per-LLM-call cost events + periodic OpenRouter ground truth check
 7. **Core file sync**: safety-critical files are overwritten from bundle on every launch
+8. **Zero orphans on close**: shutdown MUST kill all child processes (see Section 9)
