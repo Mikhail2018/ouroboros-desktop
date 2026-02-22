@@ -1,4 +1,4 @@
-"""File tools: repo_read, repo_list, drive_read, drive_list, drive_write, codebase_digest, summarize_dialogue."""
+"""File tools: repo_read, repo_list, data_read, data_list, data_write, codebase_digest, summarize_dialogue."""
 
 from __future__ import annotations
 
@@ -43,15 +43,15 @@ def _repo_list(ctx: ToolContext, dir: str = ".", max_entries: int = 500) -> str:
     return json.dumps(_list_dir(ctx.repo_dir, dir, max_entries), ensure_ascii=False, indent=2)
 
 
-def _drive_read(ctx: ToolContext, path: str) -> str:
+def _data_read(ctx: ToolContext, path: str) -> str:
     return read_text(ctx.drive_path(path))
 
 
-def _drive_list(ctx: ToolContext, dir: str = ".", max_entries: int = 500) -> str:
+def _data_list(ctx: ToolContext, dir: str = ".", max_entries: int = 500) -> str:
     return json.dumps(_list_dir(ctx.drive_root, dir, max_entries), ensure_ascii=False, indent=2)
 
 
-def _drive_write(ctx: ToolContext, path: str, content: str, mode: str = "overwrite") -> str:
+def _data_write(ctx: ToolContext, path: str, content: str, mode: str = "overwrite") -> str:
     p = ctx.drive_path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
     if mode == "overwrite":
@@ -339,28 +339,28 @@ def get_tools() -> List[ToolEntry]:
                 "max_entries": {"type": "integer", "default": 500},
             }, "required": []},
         }, _repo_list),
-        ToolEntry("drive_read", {
-            "name": "drive_read",
+        ToolEntry("data_read", {
+            "name": "data_read",
             "description": "Read a UTF-8 text file from the local data directory.",
             "parameters": {"type": "object", "properties": {"path": {"type": "string"}}, "required": ["path"]},
-        }, _drive_read),
-        ToolEntry("drive_list", {
-            "name": "drive_list",
+        }, _data_read),
+        ToolEntry("data_list", {
+            "name": "data_list",
             "description": "List files under a local data directory.",
             "parameters": {"type": "object", "properties": {
                 "dir": {"type": "string", "default": "."},
                 "max_entries": {"type": "integer", "default": 500},
             }, "required": []},
-        }, _drive_list),
-        ToolEntry("drive_write", {
-            "name": "drive_write",
+        }, _data_list),
+        ToolEntry("data_write", {
+            "name": "data_write",
             "description": "Write a UTF-8 text file to the local data directory.",
             "parameters": {"type": "object", "properties": {
                 "path": {"type": "string"},
                 "content": {"type": "string"},
                 "mode": {"type": "string", "enum": ["overwrite", "append"], "default": "overwrite"},
             }, "required": ["path", "content"]},
-        }, _drive_write),
+        }, _data_write),
         ToolEntry("send_photo", {
             "name": "send_photo",
             "description": (

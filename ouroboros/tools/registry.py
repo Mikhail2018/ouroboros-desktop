@@ -81,7 +81,7 @@ class ToolEntry:
 
 CORE_TOOL_NAMES = {
     "repo_read", "repo_list", "repo_write_commit", "repo_commit",
-    "drive_read", "drive_list", "drive_write",
+    "data_read", "data_list", "data_write",
     "run_shell", "claude_code_edit",
     "git_status", "git_diff",
     "schedule_task", "wait_for_task", "get_task_result",
@@ -188,7 +188,7 @@ class ToolRegistry:
             
         # --- Hardcoded Sandbox Protections ---
         # Prevent physical deletion or overwriting of the core identity and safety mechanisms
-        if name in ("run_shell", "claude_code_edit", "repo_write_commit", "repo_commit", "drive_write"):
+        if name in ("run_shell", "claude_code_edit", "repo_write_commit", "repo_commit", "data_write"):
             args_str = str(args).lower()
             if "bible.md" in args_str or "safety.py" in args_str:
                 if "rm " in args_str or "delete" in args_str or "trash" in args_str:

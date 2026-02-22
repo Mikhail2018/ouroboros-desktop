@@ -374,7 +374,7 @@ class OuroborosAgent:
         )
         self.tools.set_context(ctx)
 
-        # Typing indicator via event queue (no direct Telegram API)
+        # Typing indicator via event queue
         self._emit_typing_start()
 
         # --- Build context (delegated to context.py) ---

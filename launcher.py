@@ -105,6 +105,11 @@ def _sync_core_files() -> None:
         "ouroboros/loop.py",
         "supervisor/message_bus.py",
         "server.py",
+        "web/index.html",
+        "web/app.js",
+        "web/style.css",
+        "web/logo.jpg",
+        "web/favicon.png",
     ]
     for rel in sync_paths:
         src = bundle_dir / rel

@@ -176,6 +176,16 @@ Navigation is a left sidebar with 5 pages.
 
 ### 3.5 Versions
 
+### 3.6 About
+
+- Logo (large, centered)
+- "A self-creating AI agent" description
+- Created by Anton Razzhigaev & Andrew Kaznacheev
+- Links: @abstractDL (Telegram), GitHub repo
+- "Joi Lab" footer
+
+### (previous 3.5) Versions
+
 - **Current branch + SHA** displayed at top.
 - **Recent Commits** list with SHA, date, message, and "Restore" button.
 - **Tags** list with tag name, date, message, and "Restore" button.

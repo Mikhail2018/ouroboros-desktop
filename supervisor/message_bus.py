@@ -55,7 +55,7 @@ class LocalChatBridge:
         self._broadcast_fn = None  # set by server.py for WebSocket streaming
 
     def get_updates(self, offset: int, timeout: int = 10) -> List[Dict[str, Any]]:
-        """Block on the inbox queue and return updates in Telegram-like format."""
+        """Block on the inbox queue and return updates."""
         try:
             msg_text = self._inbox.get(timeout=timeout)
 

@@ -187,7 +187,7 @@ def _handle_restart_request(evt: Dict[str, Any], ctx: Any) -> None:
             ctx.send_with_budget(int(st["owner_chat_id"]), f"⚠️ Restart skipped: {msg}")
         return
     ctx.kill_workers()
-    # Persist message_offset/session_id before execv to avoid duplicate messages.
+    # Persist message_offset/session_id before restart to avoid duplicate messages.
     st2 = ctx.load_state()
     st2["session_id"] = uuid.uuid4().hex
     st2["message_offset"] = int(st2.get("message_offset") or st.get("message_offset") or 0)

@@ -126,7 +126,7 @@ def _run_supervisor(settings: dict) -> None:
     _apply_settings_to_env(settings)
 
     try:
-        from supervisor.message_bus import init as telegram_init
+        from supervisor.message_bus import init as bus_init
         from supervisor.message_bus import LocalChatBridge
 
         bridge = LocalChatBridge()
@@ -135,7 +135,7 @@ def _run_supervisor(settings: dict) -> None:
         from ouroboros.utils import set_log_sink
         set_log_sink(bridge.push_log)
 
-        telegram_init(
+        bus_init(
             drive_root=DATA_DIR,
             total_budget_limit=float(settings.get("TOTAL_BUDGET", 10.0)),
             budget_report_every=10,
@@ -309,6 +309,8 @@ def _run_supervisor(settings: dict) -> None:
                     turn_on = action not in ("off", "stop", "0")
                     st2 = load_state()
                     st2["evolution_mode_enabled"] = bool(turn_on)
+                    if turn_on:
+                        st2["evolution_consecutive_failures"] = 0
                     save_state(st2)
                     if not turn_on:
                         PENDING[:] = [t for t in PENDING if str(t.get("type")) != "evolution"]

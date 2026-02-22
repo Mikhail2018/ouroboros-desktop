@@ -85,6 +85,25 @@ body {
     transition: all 0.15s;
     font-size: 11px;
     font-family: inherit;
+    position: relative;
+}
+
+.unread-badge {
+    position: absolute;
+    top: 4px;
+    right: 8px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 9px;
+    background: var(--red);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
 }
 
 .nav-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
