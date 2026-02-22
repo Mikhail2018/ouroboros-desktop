@@ -99,9 +99,11 @@ def _sync_core_files() -> None:
     sync_paths = [
         "prompts/SAFETY.md",
         "prompts/SYSTEM.md",
+        "ouroboros/config.py",
         "ouroboros/safety.py",
         "ouroboros/tools/registry.py",
         "ouroboros/loop.py",
+        "supervisor/message_bus.py",
         "server.py",
     ]
     for rel in sync_paths:
