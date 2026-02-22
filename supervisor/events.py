@@ -193,11 +193,7 @@ def _handle_restart_request(evt: Dict[str, Any], ctx: Any) -> None:
     st2["message_offset"] = int(st2.get("message_offset") or st.get("message_offset") or 0)
     ctx.save_state(st2)
     ctx.persist_queue_snapshot(reason="pre_restart_exit")
-    # Replace current process — loads all modules from scratch
-    if getattr(sys, 'frozen', False):
-        os.execv(sys.executable, [sys.executable])
-    else:
-        os.execv(sys.executable, [sys.executable, os.path.join(os.getcwd(), "app.py")])
+    ctx.request_restart()
 
 
 def _handle_promote_to_stable(evt: Dict[str, Any], ctx: Any) -> None:
@@ -374,7 +370,7 @@ def _handle_toggle_consciousness(evt: Dict[str, Any], ctx: Any) -> None:
 
 
 def _handle_send_photo(evt: Dict[str, Any], ctx: Any) -> None:
-    """Send a photo (base64 PNG) to a Telegram chat."""
+    """Send a photo (base64 PNG) to the owner's chat."""
     import base64 as b64mod
     try:
         chat_id = int(evt.get("chat_id") or 0)

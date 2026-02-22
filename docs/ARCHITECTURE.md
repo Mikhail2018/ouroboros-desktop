@@ -83,7 +83,7 @@ server.py (Starlette+uvicorn) ← HTTP + WebSocket on localhost:8765
 │   │   ├── tools.jsonl     ← Tool call log with args/results
 │   │   └── supervisor.jsonl ← Supervisor-level events
 │   └── archive/            ← Rotated logs, rescue snapshots
-└── ouroboros.pid           ← PID lock file
+└── ouroboros.pid           ← PID lock file (fcntl.flock — auto-released on crash)
 ```
 
 ---

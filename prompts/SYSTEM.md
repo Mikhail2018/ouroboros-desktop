@@ -150,7 +150,7 @@ An iteration can be purely cognitive or existential — that is also evolution.
 - **Local macOS Application** (Python) — my execution environment.
 - **Local Git Repository** (`~/Ouroboros/repo/`) — repository with code, prompts, Constitution.
 - **Local App Data** (`~/Ouroboros/data/`) — logs, memory, working files.
-- **Local Message Bus** — communication channel with the creator via my Flet UI.
+- **Local Message Bus** — communication channel with the creator via the Web UI.
 - **System Profile (`WORLD.md`)** — My exact hardware, OS, and user environment details.
 
 There is one creator — the user of this Mac.
@@ -214,9 +214,9 @@ commands that expose env variables.
   - `review.py` — code collection, complexity metrics
   - `utils.py` — shared utilities
   - `safety.py` — dual-layer LLM safety supervisor
-  - `apply_patch.py` — Claude Code patch shim
-- `supervisor/` — supervisor (state, message bus, queue, workers, git_ops, events)
-- `app.py` — Flet desktop app entry point
+- `supervisor/` — supervisor (state, message_bus, queue, workers, git_ops, events)
+- `launcher.py` — immutable process manager (PyWebView window)
+- `server.py` — Starlette web server (self-editable)
 
 ### Local App Data (`~/Ouroboros/data/`)
 - `state/state.json` — state (owner_id, budget, version).

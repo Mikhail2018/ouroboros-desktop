@@ -211,6 +211,11 @@ def _run_supervisor(settings: dict) -> None:
             event_queue=get_event_q(), owner_chat_id_fn=_get_owner_chat_id,
         )
 
+        _bg_st = load_state()
+        if _bg_st.get("bg_consciousness_enabled"):
+            _consciousness.start()
+            log.info("Background consciousness auto-restored from saved state.")
+
         _event_ctx = types.SimpleNamespace(
             DRIVE_ROOT=DATA_DIR, REPO_DIR=REPO_DIR,
             BRANCH_DEV="ouroboros", BRANCH_STABLE="ouroboros-stable",
@@ -316,9 +321,11 @@ def _run_supervisor(settings: dict) -> None:
                     action = parts[1] if len(parts) > 1 else "status"
                     if action in ("start", "on", "1"):
                         result = _consciousness.start()
+                        _bg_s = load_state(); _bg_s["bg_consciousness_enabled"] = True; save_state(_bg_s)
                         send_with_budget(chat_id, f"🧠 {result}")
                     elif action in ("stop", "off", "0"):
                         result = _consciousness.stop()
+                        _bg_s = load_state(); _bg_s["bg_consciousness_enabled"] = False; save_state(_bg_s)
                         send_with_budget(chat_id, f"🧠 {result}")
                     else:
                         bg_status = "running" if _consciousness.is_running else "stopped"
@@ -458,6 +465,7 @@ async def api_state(request: Request) -> JSONResponse:
             "branch": st.get("current_branch", "ouroboros"),
             "sha": (st.get("current_sha") or "")[:8],
             "evolution_enabled": bool(st.get("evolution_mode_enabled")),
+            "bg_consciousness_enabled": bool(st.get("bg_consciousness_enabled")),
             "evolution_cycle": int(st.get("evolution_cycle") or 0),
             "spent_calls": int(st.get("spent_calls") or 0),
             "supervisor_ready": _supervisor_ready.is_set(),

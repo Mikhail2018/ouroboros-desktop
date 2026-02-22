@@ -308,7 +308,7 @@ def get_tools() -> List[ToolEntry]:
         }, _get_task_result),
         ToolEntry("wait_for_task", {
             "name": "wait_for_task",
-            "description": "Check if a subtask has completed. Returns result if done, or 'still running' message. Call repeatedly to poll. Default timeout: 120s.",
+            "description": "Check if a subtask has completed. Returns result if done, or 'still running' message. Call repeatedly to poll.",
             "parameters": {"type": "object", "required": ["task_id"], "properties": {
                 "task_id": {"type": "string", "description": "Task ID to check"},
             }},

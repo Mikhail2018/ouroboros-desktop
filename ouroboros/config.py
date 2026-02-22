@@ -7,6 +7,7 @@ Does not import anything from ouroboros.* (zero dependency level).
 
 from __future__ import annotations
 
+import fcntl
 import json
 import os
 import pathlib
@@ -154,25 +155,36 @@ def apply_settings_to_env(settings: dict) -> None:
 
 
 # ---------------------------------------------------------------------------
-# PID lock (single instance)
+# PID lock (single instance) — uses fcntl.flock for crash-proof locking.
+# The OS releases flock automatically when the process dies (even SIGKILL),
+# so stale lock files can never block future launches.
 # ---------------------------------------------------------------------------
+_lock_fd = None
+
+
 def acquire_pid_lock() -> bool:
+    global _lock_fd
     APP_ROOT.mkdir(parents=True, exist_ok=True)
-    if PID_FILE.exists():
-        try:
-            existing_pid = int(PID_FILE.read_text(encoding="utf-8").strip())
-            if existing_pid != os.getpid():
-                os.kill(existing_pid, 0)
-                return False
-        except (ProcessLookupError, PermissionError, ValueError, OSError):
-            PID_FILE.unlink(missing_ok=True)
-    PID_FILE.write_text(str(os.getpid()), encoding="utf-8")
-    return True
+    try:
+        _lock_fd = open(str(PID_FILE), "w")
+        fcntl.flock(_lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        _lock_fd.write(str(os.getpid()))
+        _lock_fd.flush()
+        return True
+    except (IOError, OSError):
+        return False
 
 
 def release_pid_lock() -> None:
+    global _lock_fd
+    if _lock_fd is not None:
+        try:
+            fcntl.flock(_lock_fd, fcntl.LOCK_UN)
+            _lock_fd.close()
+        except Exception:
+            pass
+        _lock_fd = None
     try:
-        if PID_FILE.exists() and PID_FILE.read_text(encoding="utf-8").strip() == str(os.getpid()):
-            PID_FILE.unlink(missing_ok=True)
+        PID_FILE.unlink(missing_ok=True)
     except Exception:
         pass

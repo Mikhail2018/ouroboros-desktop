@@ -67,7 +67,7 @@ def _drive_write(ctx: ToolContext, path: str, content: str, mode: str = "overwri
 # ---------------------------------------------------------------------------
 
 def _send_photo(ctx: ToolContext, image_base64: str, caption: str = "") -> str:
-    """Send a base64-encoded image to the owner's Telegram chat."""
+    """Send a base64-encoded image to the owner's chat."""
     if not ctx.current_chat_id:
         return "⚠️ No active chat — cannot send photo."
 

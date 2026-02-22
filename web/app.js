@@ -261,6 +261,8 @@ function initDashboard() {
 
             if (data.evolution_enabled) document.getElementById('toggle-evo').classList.add('on');
             else document.getElementById('toggle-evo').classList.remove('on');
+            if (data.bg_consciousness_enabled) document.getElementById('toggle-bg').classList.add('on');
+            else document.getElementById('toggle-bg').classList.remove('on');
         } catch {}
     }
 
@@ -295,8 +297,8 @@ function initSettings() {
                     <div class="form-field"><label>Code Model</label><input id="s-model-code" value="anthropic/claude-sonnet-4.6" style="width:250px"></div>
                 </div>
                 <div class="form-row">
-                    <div class="form-field"><label>Light Model</label><input id="s-model-light" value="google/gemini-2.5-flash" style="width:250px"></div>
-                    <div class="form-field"><label>Fallback Model</label><input id="s-model-fallback" value="google/gemini-2.5-flash" style="width:250px"></div>
+                    <div class="form-field"><label>Light Model</label><input id="s-model-light" value="google/gemini-3-flash-preview" style="width:250px"></div>
+                    <div class="form-field"><label>Fallback Model</label><input id="s-model-fallback" value="google/gemini-3-flash-preview" style="width:250px"></div>
                 </div>
             </div>
             <div class="divider"></div>

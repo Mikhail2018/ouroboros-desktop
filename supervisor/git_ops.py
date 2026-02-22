@@ -351,6 +351,7 @@ def checkout_and_reset(branch: str, reason: str = "unspecified",
             _run_git_resilient(["git", "checkout", "-b", branch], cwd=str(REPO_DIR), check=False)
         else:
             _run_git_resilient(["git", "checkout", branch], cwd=str(REPO_DIR), check=True)
+            _run_git_resilient(["git", "reset", "--hard", "HEAD"], cwd=str(REPO_DIR), check=True)
     # Clean __pycache__ to prevent stale bytecode (git checkout may not update mtime)
     for p in REPO_DIR.rglob("__pycache__"):
         shutil.rmtree(p, ignore_errors=True)
