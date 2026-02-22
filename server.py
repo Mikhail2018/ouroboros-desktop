@@ -129,7 +129,7 @@ def _run_supervisor(settings: dict) -> None:
         from supervisor.message_bus import init as telegram_init
         from supervisor.message_bus import LocalChatBridge
 
-        bridge = LocalChatBridge(token="local")
+        bridge = LocalChatBridge()
         bridge._broadcast_fn = broadcast_ws_sync
 
         from ouroboros.utils import set_log_sink
