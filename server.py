@@ -491,16 +491,29 @@ async def api_settings_post(request: Request) -> JSONResponse:
 
 
 async def api_reset(request: Request) -> JSONResponse:
-    """Delete chat history and tool logs."""
+    """Full reset: kill workers, delete repo, memory, state, logs. Keeps settings.json."""
+    import shutil
     try:
-        logs_dir = DATA_DIR / "logs"
+        try:
+            from supervisor.workers import kill_workers
+            kill_workers(force=True)
+        except Exception:
+            pass
+
         deleted = []
-        for name in ("chat.jsonl", "tools.jsonl", "events.jsonl", "progress.jsonl"):
-            p = logs_dir / name
+        for subdir in ("logs", "memory", "state", "locks", "archive", "task_results", "index"):
+            p = DATA_DIR / subdir
             if p.exists():
-                p.unlink()
-                deleted.append(name)
-        return JSONResponse({"status": "ok", "deleted": deleted})
+                shutil.rmtree(p, ignore_errors=True)
+                deleted.append(subdir)
+
+        repo_dir = REPO_DIR
+        if repo_dir.exists():
+            shutil.rmtree(repo_dir, ignore_errors=True)
+            deleted.append("repo")
+
+        _request_restart_exit()
+        return JSONResponse({"status": "ok", "deleted": deleted, "message": "Full reset. Server will restart."})
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
 

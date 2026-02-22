@@ -333,6 +333,10 @@ function initSettings() {
 
     // Load current settings
     fetch('/api/settings').then(r => r.json()).then(s => {
+        if (s.OPENROUTER_API_KEY) document.getElementById('s-openrouter').value = s.OPENROUTER_API_KEY;
+        if (s.OPENAI_API_KEY) document.getElementById('s-openai').value = s.OPENAI_API_KEY;
+        if (s.ANTHROPIC_API_KEY) document.getElementById('s-anthropic').value = s.ANTHROPIC_API_KEY;
+        if (s.GITHUB_TOKEN) document.getElementById('s-gh-token').value = s.GITHUB_TOKEN;
         if (s.OUROBOROS_MODEL) document.getElementById('s-model').value = s.OUROBOROS_MODEL;
         if (s.OUROBOROS_MODEL_CODE) document.getElementById('s-model-code').value = s.OUROBOROS_MODEL_CODE;
         if (s.OUROBOROS_MODEL_LIGHT) document.getElementById('s-model-light').value = s.OUROBOROS_MODEL_LIGHT;
@@ -377,13 +381,13 @@ function initSettings() {
     });
 
     document.getElementById('btn-reset').addEventListener('click', async () => {
-        if (!confirm('This will delete all chat history and logs. Are you sure?')) return;
+        if (!confirm('This will delete ALL data: repo, memory, logs, state. Settings (API keys) will be kept. The server will restart.\n\nAre you sure?')) return;
         try {
             const res = await fetch('/api/reset', { method: 'POST' });
             const data = await res.json();
             if (data.status === 'ok') {
-                alert('Deleted: ' + (data.deleted.join(', ') || 'nothing to delete'));
-                location.reload();
+                alert('Reset complete. Deleted: ' + (data.deleted.join(', ') || 'nothing'));
+                setTimeout(() => location.reload(), 3000);
             } else {
                 alert('Error: ' + (data.error || 'unknown'));
             }
