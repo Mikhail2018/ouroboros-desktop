@@ -179,8 +179,37 @@ function initChat() {
         input.style.height = Math.min(input.scrollHeight, 120) + 'px';
     });
 
+    // Typing indicator element (persistent, shown/hidden as needed)
+    const typingEl = document.createElement('div');
+    typingEl.id = 'typing-indicator';
+    typingEl.className = 'chat-bubble assistant typing-bubble';
+    typingEl.style.display = 'none';
+    typingEl.innerHTML = `<div class="typing-dots"><span></span><span></span><span></span></div>`;
+    messagesDiv.appendChild(typingEl);
+
+    function showTyping() {
+        typingEl.style.display = '';
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        const badge = document.getElementById('chat-status');
+        if (badge) {
+            badge.className = 'status-badge thinking';
+            badge.textContent = 'Thinking...';
+        }
+    }
+    function hideTyping() {
+        typingEl.style.display = 'none';
+        const badge = document.getElementById('chat-status');
+        if (badge && badge.textContent === 'Thinking...') {
+            badge.className = 'status-badge online';
+            badge.textContent = 'Online';
+        }
+    }
+
+    ws.on('typing', () => { showTyping(); });
+
     ws.on('chat', (msg) => {
         if (msg.role === 'assistant') {
+            hideTyping();
             addMessage(msg.content, 'assistant', msg.markdown);
             if (state.activePage !== 'chat') {
                 state.unreadCount++;
@@ -194,6 +223,7 @@ function initChat() {
         document.getElementById('chat-status').textContent = 'Online';
     });
     ws.on('close', () => {
+        hideTyping();
         document.getElementById('chat-status').className = 'status-badge offline';
         document.getElementById('chat-status').textContent = 'Reconnecting...';
     });
