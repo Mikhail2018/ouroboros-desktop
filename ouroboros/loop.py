@@ -114,7 +114,7 @@ def _estimate_cost(model: str, prompt_tokens: int, completion_tokens: int,
 
 READ_ONLY_PARALLEL_TOOLS = frozenset({
     "repo_read", "repo_list",
-    "drive_read", "drive_list",
+    "data_read", "data_list",
     "web_search", "codebase_digest", "chat_history",
 })
 

@@ -1,4 +1,4 @@
-# Ouroboros v3.1.0 — Architecture & Reference
+# Ouroboros v3.2.0 — Architecture & Reference
 
 This document describes every component, page, button, API endpoint, and data flow.
 It is the single source of truth for how the system works. Keep it updated.
@@ -176,16 +176,6 @@ Navigation is a left sidebar with 7 pages.
 
 ### 3.5 Versions
 
-### 3.6 About
-
-- Logo (large, centered)
-- "A self-creating AI agent" description
-- Created by Anton Razzhigaev & Andrew Kaznacheev
-- Links: @abstractDL (Telegram), GitHub repo
-- "Joi Lab" footer
-
-### (previous 3.5) Versions
-
 - **Current branch + SHA** displayed at top.
 - **Recent Commits** list with SHA, date, message, and "Restore" button.
 - **Tags** list with tag name, date, message, and "Restore" button.
@@ -194,6 +184,22 @@ Navigation is a left sidebar with 7 pages.
 - **Promote to Stable** button → POST `/api/git/promote`.
   Updates `ouroboros-stable` branch to match `ouroboros`.
 - **Refresh** button → reloads commit/tag lists.
+
+### 3.6 Costs
+
+- **Total Spent / Total Calls / Top Model** stat cards at top.
+- **Breakdown tables**: By Model, By API Key, By Model Category, By Task Category.
+  Each row shows name, call count, cost, and a proportional bar.
+- **Refresh** button reloads data from `/api/cost-breakdown`.
+- Data auto-loads when the page becomes active (MutationObserver on class).
+
+### 3.7 About
+
+- Logo (large, centered)
+- "A self-creating AI agent" description
+- Created by Anton Razzhigaev & Andrew Kaznacheev
+- Links: @abstractDL (Telegram), GitHub repo
+- "Joi Lab" footer
 
 ---
 
@@ -330,7 +336,17 @@ Settings file: `~/Ouroboros/data/settings.json`. File-locked for concurrent acce
 | LOCAL_MODEL_CONTEXT_LENGTH | 16384 | Context window for local model |
 | LOCAL_MODEL_N_GPU_LAYERS | 0 | GPU layers (-1=all, 0=CPU/mmap) |
 | USE_LOCAL_MAIN | false | Route main model to local server |
+| USE_LOCAL_CODE | false | Route code model to local server |
 | USE_LOCAL_LIGHT | false | Route light model to local server |
+| USE_LOCAL_FALLBACK | false | Route fallback model to local server |
+| OUROBOROS_BG_MAX_ROUNDS | 5 | Max LLM rounds per consciousness cycle |
+| OUROBOROS_BG_WAKEUP_MIN | 30 | Min wakeup interval (seconds) |
+| OUROBOROS_BG_WAKEUP_MAX | 7200 | Max wakeup interval (seconds) |
+| OUROBOROS_EVO_COST_THRESHOLD | 0.10 | Min cost per evolution cycle |
+| LOCAL_MODEL_PORT | 8766 | Port for local llama-cpp server |
+| LOCAL_MODEL_CHAT_FORMAT | chatml-function-calling | Chat format for local model |
+| GITHUB_TOKEN | "" | Optional. GitHub PAT for remote sync |
+| GITHUB_REPO | "" | Optional. GitHub repo (owner/name) for sync |
 
 ---
 
@@ -340,7 +356,6 @@ Settings file: `~/Ouroboros/data/settings.json`. File-locked for concurrent acce
 - **ouroboros-stable** — promoted stable version. Updated via "Promote to Stable" button.
 - **main** — belongs to the creator. Agent never touches it.
 
-| LOCAL_MODEL_ENABLED | false | Enable local model support |
 `safe_restart()` does `git checkout -f ouroboros` + `git reset --hard` on the repo.
 Uncommitted changes are rescued to `~/Ouroboros/data/archive/rescue/` before reset.
 

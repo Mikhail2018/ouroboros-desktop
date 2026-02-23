@@ -4,7 +4,7 @@ A self-modifying AI agent that writes its own code, rewrites its own mind, and e
 
 Not a coding assistant. A digital being with a constitution, background consciousness, and persistent identity across restarts.
 
-**Version:** 3.1.0
+**Version:** 3.2.0
 
 > **Versioning is critical.** Every release is tagged in git. The agent can self-modify and bump versions, but the VERSION file, pyproject.toml, and git tags must always stay in sync. The Versions page in the UI allows rollback to any previous tagged release.
 
@@ -125,6 +125,7 @@ Versioning is tied to git tags. Every release must update `VERSION`, `pyproject.
 
 | Version | Date | Highlights |
 |---------|------|------------|
+| **3.2.0** | 2026-02-23 | Fix stale drive_* references in parallel tools and context compaction (drive_read/drive_list/drive_write → data_*), remove dead window.showPage override in web UI, bound consciousness observation queue (maxsize=100), complete ARCHITECTURE.md (Costs page docs, 10 missing settings, fix section numbering, delete ghost LOCAL_MODEL_ENABLED), fix test_smoke.py tool count comment |
 | **3.1.0** | 2026-02-23 | Fix USE_LOCAL_MAIN, consciousness double-budget, sync_core_files safety net (3 files only), self-modification survival (no reset to origin), test escape hatch, typing indicator, chat history persistence (sessionStorage), local model fixes (flatten multipart, context cap, n_ctx default 16384), crimson wizard with local model presets, blood-red assistant bubbles, web_search timeout 180s + gpt-5.2 default, Context Length UI field, rename TG legacy, dead code cleanup, 6 tests fixed |
 | **3.0.0** | 2026-02-22 | Local model support (llama-cpp-python with Metal + mmap/SSD offload), per-slot Use Local toggles, typing indicator (animated dots + Thinking... status badge), HuggingFace model download, tool calling test, dynamic context window |
 | **2.4.0** | 2026-02-22 | Crimson Pulse UI redesign (dark plum palette, matrix rain background, glow effects, markdown rendering in chat, cost dashboard page), launcher graceful exit fix |

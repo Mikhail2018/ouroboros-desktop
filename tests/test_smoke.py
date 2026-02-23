@@ -2,7 +2,7 @@
 
 Tests core invariants:
 - All modules import cleanly
-- Tool registry discovers all 33 tools
+- Tool registry discovers all 48 tools
 - Utility functions work correctly
 - Memory operations don't crash
 - Context builder produces valid structure

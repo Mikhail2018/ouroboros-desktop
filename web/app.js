@@ -613,15 +613,6 @@ function initSettings() {
         }
     });
 
-    // Cleanup interval when changing pages
-    const origShowPage = window.showPage;
-    window.showPage = function(name) {
-        if (name !== 'settings' && localStatusInterval) {
-            clearInterval(localStatusInterval);
-            localStatusInterval = null;
-        }
-        if (origShowPage) origShowPage(name);
-    };
 }
 
 // ---------------------------------------------------------------------------
