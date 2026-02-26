@@ -827,7 +827,8 @@ async def lifespan(app):
     _event_loop = asyncio.get_running_loop()
 
     settings = load_settings()
-    if settings.get("OPENROUTER_API_KEY"):
+    use_openclaw_oauth = str(settings.get("USE_OPENCLAW_OAUTH") or os.environ.get("USE_OPENCLAW_OAUTH", "")).lower() in {"1", "true", "yes", "on"}
+    if settings.get("OPENROUTER_API_KEY") or use_openclaw_oauth:
         threading.Thread(target=_run_supervisor, args=(settings,), daemon=True).start()
     else:
         _supervisor_ready.set()

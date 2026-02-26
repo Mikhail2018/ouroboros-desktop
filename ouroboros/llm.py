@@ -7,8 +7,10 @@ Contract: chat(), default_model(), available_models(), add_usage().
 
 from __future__ import annotations
 
+import json
 import logging
 import os
+import subprocess
 import time
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -195,7 +197,64 @@ class LLMClient:
         if use_local:
             return self._chat_local(messages, tools, max_tokens, tool_choice)
 
+        if str(os.environ.get("USE_OPENCLAW_OAUTH", "")).lower() in {"1", "true", "yes", "on"}:
+            return self._chat_openclaw_oauth(messages, model)
+
         return self._chat_openrouter(messages, model, tools, reasoning_effort, max_tokens, tool_choice)
+
+    def _chat_openclaw_oauth(
+        self,
+        messages: List[Dict[str, Any]],
+        model: str,
+    ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+        """Route chat through OpenClaw agent runtime (OAuth-backed model in OpenClaw config)."""
+        prompt_parts: List[str] = []
+        for m in messages:
+            role = str(m.get("role", "user"))
+            content = m.get("content", "")
+            if isinstance(content, list):
+                text = "\n".join(
+                    b.get("text", "") for b in content
+                    if isinstance(b, dict) and b.get("type") == "text"
+                )
+            else:
+                text = str(content)
+            prompt_parts.append(f"[{role}] {text}")
+        prompt = "\n\n".join(prompt_parts).strip() or "Continue."
+
+        agent_id = os.environ.get("OPENCLAW_AGENT_ID", "main")
+        thinking = os.environ.get("OPENCLAW_THINKING", "low")
+        cmd = [
+            "openclaw", "agent",
+            "--agent", agent_id,
+            "--message", prompt,
+            "--thinking", thinking,
+            "--json",
+        ]
+        try:
+            out = subprocess.run(cmd, capture_output=True, text=True, timeout=180)
+        except Exception as e:
+            return {"role": "assistant", "content": f"OpenClaw OAuth bridge error: {e}"}, {"cost": 0.0}
+
+        if out.returncode != 0:
+            err = (out.stderr or out.stdout or "openclaw agent failed").strip()
+            return {"role": "assistant", "content": f"OpenClaw OAuth bridge failed: {err}"}, {"cost": 0.0}
+
+        txt = (out.stdout or "").strip()
+        content = txt
+        try:
+            data = json.loads(txt)
+            content = (
+                data.get("reply")
+                or data.get("message")
+                or data.get("output")
+                or data.get("text")
+                or txt
+            )
+        except Exception:
+            pass
+
+        return {"role": "assistant", "content": str(content)}, {"cost": 0.0, "provider": "openclaw-oauth", "model": model}
 
     def _chat_local(
         self,

@@ -39,6 +39,9 @@ SETTINGS_DEFAULTS = {
     "OPENROUTER_API_KEY": "",
     "OPENAI_API_KEY": "",
     "ANTHROPIC_API_KEY": "",
+    "USE_OPENCLAW_OAUTH": False,
+    "OPENCLAW_AGENT_ID": "main",
+    "OPENCLAW_THINKING": "low",
     "OUROBOROS_MODEL": "anthropic/claude-sonnet-4.6",
     "OUROBOROS_MODEL_CODE": "anthropic/claude-sonnet-4.6",
     "OUROBOROS_MODEL_LIGHT": "google/gemini-3-flash-preview",
@@ -154,6 +157,7 @@ def apply_settings_to_env(settings: dict) -> None:
     """Push settings into environment variables for supervisor modules."""
     env_keys = [
         "OPENROUTER_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY",
+        "USE_OPENCLAW_OAUTH", "OPENCLAW_AGENT_ID", "OPENCLAW_THINKING",
         "OUROBOROS_MODEL", "OUROBOROS_MODEL_CODE", "OUROBOROS_MODEL_LIGHT",
         "OUROBOROS_MODEL_FALLBACK", "CLAUDE_CODE_MODEL",
         "TOTAL_BUDGET", "GITHUB_TOKEN", "GITHUB_REPO",

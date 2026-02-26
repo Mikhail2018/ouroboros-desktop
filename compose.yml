@@ -1,0 +1,24 @@
+services:
+  ouroboros:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ouroboros-desktop
+    restart: unless-stopped
+    ports:
+      - "8765:8765"
+    environment:
+      USE_OPENCLAW_OAUTH: "true"
+      OPENCLAW_AGENT_ID: "main"
+      OPENCLAW_THINKING: "low"
+      OUROBOROS_MODEL: "openai-codex/gpt-5.3-codex"
+      OUROBOROS_MODEL_CODE: "openai-codex/gpt-5.3-codex"
+      OUROBOROS_MODEL_LIGHT: "openai-codex/gpt-5.3-codex"
+      OUROBOROS_MODEL_FALLBACK: "openai-codex/gpt-5.3-codex"
+      TELEGRAM_BOT_TOKEN: "8211681664:AAFhbZA8zMQsxA0k-tpe0060nrNOd4iCNtg"
+      TELEGRAM_CHAT_ID: "210362907"
+    command: ["sh", "-lc", "python server.py & sleep 5 && python /telegram_bridge.py"]
+    volumes:
+      - /Users/mikhail/.openclaw:/root/.openclaw
+      - ./_ouroboros_data:/root/Ouroboros
+      - ./scripts/telegram_bridge.py:/telegram_bridge.py:ro
