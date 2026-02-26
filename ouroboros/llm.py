@@ -242,15 +242,31 @@ class LLMClient:
 
         txt = (out.stdout or "").strip()
         content = txt
+
+        # openclaw may prepend non-JSON lines (e.g. auth-profiles notices)
+        # before the actual JSON payload; try to parse from first '{'.
+        candidate = txt
+        first_brace = txt.find("{")
+        if first_brace > 0:
+            candidate = txt[first_brace:]
+
         try:
-            data = json.loads(txt)
-            content = (
-                data.get("reply")
-                or data.get("message")
-                or data.get("output")
-                or data.get("text")
-                or txt
-            )
+            data = json.loads(candidate)
+            # OpenClaw may return nested envelopes; extract human text only.
+            if isinstance(data, dict) and isinstance(data.get("payloads"), list):
+                parts = []
+                for p in data.get("payloads", []):
+                    if isinstance(p, dict) and p.get("text"):
+                        parts.append(str(p.get("text")))
+                content = "\n\n".join(parts).strip() or txt
+            else:
+                content = (
+                    data.get("reply")
+                    or data.get("message")
+                    or data.get("output")
+                    or data.get("text")
+                    or txt
+                )
         except Exception:
             pass
 

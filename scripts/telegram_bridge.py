@@ -46,12 +46,41 @@ def post_command(text: str):
     requests.post(f"{SERVER_HTTP}/api/command", json={"cmd": text}, timeout=15)
 
 
+def _normalize_text(txt: str) -> str:
+    t = (txt or "").strip()
+
+    # Strip noisy OpenClaw prefix lines when present.
+    if t.startswith("[agents/auth-profiles]"):
+        lines = [ln for ln in t.splitlines() if ln.strip()]
+        if len(lines) > 1:
+            t = "\n".join(lines[1:]).strip()
+
+    # Try parse full text as JSON, or parse from first '{' if prefixed.
+    candidates = [t]
+    i = t.find("{")
+    if i > 0:
+        candidates.append(t[i:])
+
+    for c in candidates:
+        try:
+            j = json.loads(c)
+            if isinstance(j, dict) and isinstance(j.get("payloads"), list):
+                parts = [str(p.get("text", "")).strip() for p in j.get("payloads", []) if isinstance(p, dict)]
+                parts = [p for p in parts if p]
+                if parts:
+                    return "\n\n".join(parts)
+        except Exception:
+            continue
+
+    return t
+
+
 def wait_reply(after_ts: float, timeout_sec: int = 90) -> str:
     deadline = time.time() + timeout_sec
     while time.time() < deadline:
         for ts, txt in list(OUTBOX):
             if ts >= after_ts:
-                return txt
+                return _normalize_text(txt)
         time.sleep(0.5)
     return "⏳ Команда принята, но ответ ещё не пришёл."
 
