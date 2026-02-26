@@ -15,7 +15,7 @@ services:
       OUROBOROS_MODEL_CODE: "openai-codex/gpt-5.3-codex"
       OUROBOROS_MODEL_LIGHT: "openai-codex/gpt-5.3-codex"
       OUROBOROS_MODEL_FALLBACK: "openai-codex/gpt-5.3-codex"
-      TELEGRAM_BOT_TOKEN: "8211681664:AAFhbZA8zMQsxA0k-tpe0060nrNOd4iCNtg"
+      TELEGRAM_BOT_TOKEN: ""
       TELEGRAM_CHAT_ID: "210362907"
     command: ["sh", "-lc", "python server.py & sleep 5 && python /telegram_bridge.py"]
     volumes:
